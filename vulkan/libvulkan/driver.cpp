@@ -1027,8 +1027,11 @@ void QueryPresentationProperties(
     }
 }
 
-bool GetAndroidNativeBufferSpecVersion9Support(
-    VkPhysicalDevice physicalDevice) {
+VkResult GetAndroidNativeBufferSpecVersion9Support(
+    VkPhysicalDevice physicalDevice,
+    bool& support) {
+    support = false;
+
     const InstanceData& data = GetData(physicalDevice);
 
     // Call to get propertyCount
@@ -1038,12 +1041,20 @@ bool GetAndroidNativeBufferSpecVersion9Support(
         physicalDevice, nullptr, &propertyCount, nullptr);
     ATRACE_END();
 
+    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+        return result;
+    }
+
     // Call to enumerate properties
     std::vector<VkExtensionProperties> properties(propertyCount);
     ATRACE_BEGIN("driver.EnumerateDeviceExtensionProperties");
     result = data.driver.EnumerateDeviceExtensionProperties(
         physicalDevice, nullptr, &propertyCount, properties.data());
     ATRACE_END();
+
+    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+        return result;
+    }
 
     for (uint32_t i = 0; i < propertyCount; i++) {
         auto& prop = properties[i];
@@ -1053,11 +1064,12 @@ bool GetAndroidNativeBufferSpecVersion9Support(
             continue;
 
         if (prop.specVersion >= 9) {
-            return true;
+            support = true;
+            return result;
         }
     }
 
-    return false;
+    return result;
 }
 
 VkResult EnumerateDeviceExtensionProperties(
@@ -1112,7 +1124,13 @@ VkResult EnumerateDeviceExtensionProperties(
 
     GetPhysicalDeviceFeatures2(physicalDevice, &feats2);
 
-    bool anb9 = GetAndroidNativeBufferSpecVersion9Support(physicalDevice);
+    bool anb9;
+    VkResult result =
+        GetAndroidNativeBufferSpecVersion9Support(physicalDevice, anb9);
+
+    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+        return result;
+    }
 
     if (anb9 && imageCompFeats.imageCompressionControl) {
         loader_extensions.push_back(
@@ -1142,7 +1160,7 @@ VkResult EnumerateDeviceExtensionProperties(
     }
 
     ATRACE_BEGIN("driver.EnumerateDeviceExtensionProperties");
-    VkResult result = data.driver.EnumerateDeviceExtensionProperties(
+    result = data.driver.EnumerateDeviceExtensionProperties(
         physicalDevice, pLayerName, pPropertyCount, pProperties);
     ATRACE_END();
 
