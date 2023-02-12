@@ -518,7 +518,7 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
             : getMaxScoreRefreshRate(scores.begin(), scores.end());
 
    bool noFpsScored = std::all_of(scores.begin(), scores.end(),
-                                  [](RefreshRateScore score) { return score.score == 0; });
+                                  [](RefreshRateScore score) { return score.overallScore == 0; });
    if (noFpsScored) {
       ALOGV("No fps scored - choose %s", to_string(mActiveModeIt->second->getFps()).c_str());
       return {mActiveModeIt->second, kNoSignals};
