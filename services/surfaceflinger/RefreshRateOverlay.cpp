@@ -174,7 +174,7 @@ auto RefreshRateOverlay::SevenSegmentDrawer::draw(int number, SkColor color,
         }
         left += kDigitWidth + kDigitSpace;
 
-        if (tens != 0) {
+        if (tens != 0 || hundreds != 0 ) {
             drawDigit(tens, left, color, *canvas);
         }
         left += kDigitWidth + kDigitSpace;
