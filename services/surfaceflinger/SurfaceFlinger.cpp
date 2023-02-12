@@ -398,6 +398,10 @@ SurfaceFlinger::SurfaceFlinger(Factory& factory) : SurfaceFlinger(factory, SkipI
     int debugDdms = atoi(value);
     ALOGI_IF(debugDdms, "DDMS debugging not supported");
 
+    property_get("debug.sf.disable_backpressure", value, "0");
+    mPropagateBackpressure = !atoi(value);
+    ALOGI_IF(!mPropagateBackpressure, "Disabling backpressure propagation");
+
     property_get("debug.sf.enable_gl_backpressure", value, "0");
     mPropagateBackpressureClientComposition = atoi(value);
     ALOGI_IF(mPropagateBackpressureClientComposition,
@@ -1970,8 +1974,16 @@ SurfaceFlinger::FenceWithFenceTime SurfaceFlinger::previousFrameFence() {
     const auto now = systemTime();
     const auto vsyncPeriod = mScheduler->getDisplayStatInfo(now).vsyncPeriod;
     const bool expectedPresentTimeIsTheNextVsync = mExpectedPresentTime - now <= vsyncPeriod;
-    return expectedPresentTimeIsTheNextVsync ? mPreviousPresentFences[0]
-                                             : mPreviousPresentFences[1];
+
+    size_t shift = 0;
+    if (!expectedPresentTimeIsTheNextVsync) {
+        shift = static_cast<size_t>((mExpectedPresentTime - now) / vsyncPeriod);
+        if (shift >= mPreviousPresentFences.size()) {
+            shift = mPreviousPresentFences.size() - 1;
+        }
+    }
+    ATRACE_FORMAT("previousFrameFence shift=%zu", shift);
+    return mPreviousPresentFences[shift];
 }
 
 bool SurfaceFlinger::previousFramePending(int graceTimeMs) {
@@ -2029,7 +2041,7 @@ bool SurfaceFlinger::commit(nsecs_t frameTime, int64_t vsyncId, nsecs_t expected
     // When Backpressure propagation is enabled we want to give a small grace period
     // for the present fence to fire instead of just giving up on this frame to handle cases
     // where present fence is just about to get signaled.
-    const int graceTimeForPresentFenceMs =
+    const int graceTimeForPresentFenceMs = mPropagateBackpressure &&
             (mPropagateBackpressureClientComposition || !mHadClientComposition) ? 1 : 0;
 
     // Pending frames may trigger backpressure propagation.
@@ -2087,7 +2099,7 @@ bool SurfaceFlinger::commit(nsecs_t frameTime, int64_t vsyncId, nsecs_t expected
         }
     }
 
-    if (framePending) {
+    if (framePending && mPropagateBackpressure) {
         if ((hwcFrameMissed && !gpuFrameMissed) || mPropagateBackpressureClientComposition) {
             scheduleCommit(FrameHint::kNone);
             return false;
@@ -2139,8 +2151,16 @@ bool SurfaceFlinger::commit(nsecs_t frameTime, int64_t vsyncId, nsecs_t expected
 
         bool needsTraversal = false;
         if (clearTransactionFlags(eTransactionFlushNeeded)) {
+            // Locking:
+            // 1. to prevent onHandleDestroyed from being called while the state lock is held,
+            // we must keep a copy of the transactions (specifically the composer
+            // states) around outside the scope of the lock
+            // 2. Transactions and created layers do not share a lock. To prevent applying
+            // transactions with layers still in the createdLayer queue, flush the transactions
+            // before committing the created layers.
+            std::vector<TransactionState> transactions = flushTransactions();
             needsTraversal |= commitCreatedLayers();
-            needsTraversal |= flushTransactionQueues(vsyncId);
+            needsTraversal |= applyTransactions(transactions, vsyncId);
         }
 
         const bool shouldCommit =
@@ -2457,7 +2477,10 @@ void SurfaceFlinger::postComposition() {
         glCompositionDoneFenceTime = FenceTime::NO_FENCE;
     }
 
-    mPreviousPresentFences[1] = mPreviousPresentFences[0];
+    for (size_t i = mPreviousPresentFences.size()-1; i >= 1; i--) {
+        mPreviousPresentFences[i] = mPreviousPresentFences[i-1];
+    }
+
     mPreviousPresentFences[0].fence =
             display ? getHwComposer().getPresentFence(display->getPhysicalId()) : Fence::NO_FENCE;
     mPreviousPresentFences[0].fenceTime =
@@ -2853,7 +2876,7 @@ sp<DisplayDevice> SurfaceFlinger::setupNewDisplayDeviceInternal(
         scheduler::RefreshRateConfigs::Config config =
                 {.enableFrameRateOverride = android::sysprop::enable_frame_rate_override(false),
                  .frameRateMultipleThreshold =
-                         base::GetIntProperty("debug.sf.frame_rate_multiple_threshold", 0),
+                         base::GetIntProperty("debug.sf.frame_rate_multiple_threshold", 60),
                  .idleTimerTimeout = idleTimerTimeoutMs,
                  .kernelIdleTimerController = kernelIdleTimerController};
         creationArgs.refreshRateConfigs =
@@ -3816,7 +3839,7 @@ int SurfaceFlinger::flushPendingTransactionQueues(
     return transactionsPendingBarrier;
 }
 
-bool SurfaceFlinger::flushTransactionQueues(int64_t vsyncId) {
+std::vector<TransactionState> SurfaceFlinger::flushTransactions() {
     // to prevent onHandleDestroyed from being called while the lock is held,
     // we must keep a copy of the transactions (specifically the composer
     // states) around outside the scope of the lock
@@ -3910,14 +3933,25 @@ bool SurfaceFlinger::flushTransactionQueues(int64_t vsyncId) {
                 flushUnsignaledPendingTransactionQueues(transactions, bufferLayersReadyToPresent,
                                                         applyTokensWithUnsignaledTransactions);
             }
-
-            return applyTransactions(transactions, vsyncId);
         }
     }
+    return transactions;
+}
+
+// for test only
+bool SurfaceFlinger::flushTransactionQueues(int64_t vsyncId) {
+    std::vector<TransactionState> transactions = flushTransactions();
+    return applyTransactions(transactions, vsyncId);
 }
 
 bool SurfaceFlinger::applyTransactions(std::vector<TransactionState>& transactions,
                                        int64_t vsyncId) {
+    Mutex::Autolock _l(mStateLock);
+    return applyTransactionsLocked(transactions, vsyncId);
+}
+
+bool SurfaceFlinger::applyTransactionsLocked(std::vector<TransactionState>& transactions,
+                                             int64_t vsyncId) {
     bool needsTraversal = false;
     // Now apply all transactions.
     for (auto& transaction : transactions) {
@@ -4408,6 +4442,7 @@ uint32_t SurfaceFlinger::setClientStateLocked(const FrameTimelineInfo& frameTime
         }
         return 0;
     }
+    MUTEX_ALIAS(mStateLock, layer->mFlinger->mStateLock);
 
     // Only set by BLAST adapter layers
     if (what & layer_state_t::eProducerDisconnect) {
@@ -5060,6 +5095,7 @@ status_t SurfaceFlinger::doDump(int fd, const DumpArgs& args, bool asProto) {
             if (!lock.locked()) {
                 StringAppendF(&result, "Dumping without lock after timeout: %s (%d)\n",
                               strerror(-lock.status), lock.status);
+                return NO_ERROR;
             }
 
             if (const auto it = dumpers.find(flag); it != dumpers.end()) {
@@ -5300,6 +5336,7 @@ void SurfaceFlinger::dumpWideColorInfo(std::string& result) const {
 
 LayersProto SurfaceFlinger::dumpDrawingStateProto(uint32_t traceFlags) const {
     LayersProto layersProto;
+    Mutex::Autolock _l(mStateLock);
     for (const sp<Layer>& layer : mDrawingState.layersSortedByZ) {
         layer->writeToProto(layersProto, traceFlags);
     }
@@ -7314,6 +7351,7 @@ void SurfaceFlinger::handleLayerCreatedLocked(const LayerCreatedState& state) {
         ALOGD("Layer was destroyed soon after creation %p", state.layer.unsafe_get());
         return;
     }
+    MUTEX_ALIAS(mStateLock, layer->mFlinger->mStateLock);
 
     sp<Layer> parent;
     bool addToRoot = state.addToRoot;
@@ -7647,7 +7685,7 @@ status_t SurfaceComposerAIDL::checkControlDisplayBrightnessPermission() {
     IPCThreadState* ipc = IPCThreadState::self();
     const int pid = ipc->getCallingPid();
     const int uid = ipc->getCallingUid();
-    if ((uid != AID_GRAPHICS) &&
+    if ((uid != AID_GRAPHICS) && (uid != AID_SYSTEM) &&
         !PermissionCache::checkPermission(sControlDisplayBrightness, pid, uid)) {
         ALOGE("Permission Denial: can't control brightness pid=%d, uid=%d", pid, uid);
         return PERMISSION_DENIED;
