@@ -1974,16 +1974,8 @@ SurfaceFlinger::FenceWithFenceTime SurfaceFlinger::previousFrameFence() {
     const auto now = systemTime();
     const auto vsyncPeriod = mScheduler->getDisplayStatInfo(now).vsyncPeriod;
     const bool expectedPresentTimeIsTheNextVsync = mExpectedPresentTime - now <= vsyncPeriod;
-
-    size_t shift = 0;
-    if (!expectedPresentTimeIsTheNextVsync) {
-        shift = static_cast<size_t>((mExpectedPresentTime - now) / vsyncPeriod);
-        if (shift >= mPreviousPresentFences.size()) {
-            shift = mPreviousPresentFences.size() - 1;
-        }
-    }
-    ATRACE_FORMAT("previousFrameFence shift=%zu", shift);
-    return mPreviousPresentFences[shift];
+    return expectedPresentTimeIsTheNextVsync ? mPreviousPresentFences[0]
+                                             : mPreviousPresentFences[1];
 }
 
 bool SurfaceFlinger::previousFramePending(int graceTimeMs) {
@@ -2469,10 +2461,7 @@ void SurfaceFlinger::postComposition() {
         glCompositionDoneFenceTime = FenceTime::NO_FENCE;
     }
 
-    for (size_t i = mPreviousPresentFences.size()-1; i >= 1; i--) {
-        mPreviousPresentFences[i] = mPreviousPresentFences[i-1];
-    }
-
+    mPreviousPresentFences[1] = mPreviousPresentFences[0];
     mPreviousPresentFences[0].fence =
             display ? getHwComposer().getPresentFence(display->getPhysicalId()) : Fence::NO_FENCE;
     mPreviousPresentFences[0].fenceTime =
