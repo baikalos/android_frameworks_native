@@ -605,9 +605,7 @@ void EGLConsumer::onAbandonLocked() {
 }
 
 EGLConsumer::EglImage::EglImage(sp<GraphicBuffer> graphicBuffer)
-      : mGraphicBuffer(graphicBuffer), mEglImage(EGL_NO_IMAGE_KHR), mEglDisplay(EGL_NO_DISPLAY) {
-      mDataSpace = ui::Dataspace::UNKNOWN;  
-}
+      : mGraphicBuffer(graphicBuffer), mEglImage(EGL_NO_IMAGE_KHR), mEglDisplay(EGL_NO_DISPLAY) {}
 
 EGLConsumer::EglImage::~EglImage() {
     if (mEglImage != EGL_NO_IMAGE_KHR) {
@@ -622,16 +620,7 @@ status_t EGLConsumer::EglImage::createIfNeeded(EGLDisplay eglDisplay, bool force
     // If there's an image and it's no longer valid, destroy it.
     bool haveImage = mEglImage != EGL_NO_IMAGE_KHR;
     bool displayInvalid = mEglDisplay != eglDisplay;
-
-    ui::Dataspace dataspace;
-    bool dataspaceChanged = false;
-    if (mGraphicBuffer->getDataspace(&dataspace) == 0 ) {
-         dataspaceChanged = (mDataSpace != dataspace)? true:false;
-         if(dataspaceChanged)
-             ALOGI("createIfNeeded: Recreate new EGLImage since dataspace changed");
-    }
-
-    if (haveImage && (displayInvalid || forceCreation || dataspaceChanged)) {
+    if (haveImage && (displayInvalid || forceCreation)) {
         if (!eglDestroyImageKHR(mEglDisplay, mEglImage)) {
             ALOGE("createIfNeeded: eglDestroyImageKHR failed");
         }
@@ -654,10 +643,6 @@ status_t EGLConsumer::EglImage::createIfNeeded(EGLDisplay eglDisplay, bool force
               buffer->getWidth(), buffer->getHeight(), buffer->getStride(), buffer->getUsage(),
               buffer->getPixelFormat());
         return UNKNOWN_ERROR;
-    }
-    
-    if (dataspaceChanged) {
-        mDataSpace = dataspace;
     }
 
     return OK;
