@@ -2151,16 +2151,8 @@ bool SurfaceFlinger::commit(nsecs_t frameTime, int64_t vsyncId, nsecs_t expected
 
         bool needsTraversal = false;
         if (clearTransactionFlags(eTransactionFlushNeeded)) {
-            // Locking:
-            // 1. to prevent onHandleDestroyed from being called while the state lock is held,
-            // we must keep a copy of the transactions (specifically the composer
-            // states) around outside the scope of the lock
-            // 2. Transactions and created layers do not share a lock. To prevent applying
-            // transactions with layers still in the createdLayer queue, flush the transactions
-            // before committing the created layers.
-            std::vector<TransactionState> transactions = flushTransactions();
             needsTraversal |= commitCreatedLayers();
-            needsTraversal |= applyTransactions(transactions, vsyncId);
+            needsTraversal |= flushTransactionQueues(vsyncId);
         }
 
         const bool shouldCommit =
@@ -3839,7 +3831,7 @@ int SurfaceFlinger::flushPendingTransactionQueues(
     return transactionsPendingBarrier;
 }
 
-std::vector<TransactionState> SurfaceFlinger::flushTransactions() {
+bool SurfaceFlinger::flushTransactionQueues(int64_t vsyncId) {
     // to prevent onHandleDestroyed from being called while the lock is held,
     // we must keep a copy of the transactions (specifically the composer
     // states) around outside the scope of the lock
@@ -3933,25 +3925,14 @@ std::vector<TransactionState> SurfaceFlinger::flushTransactions() {
                 flushUnsignaledPendingTransactionQueues(transactions, bufferLayersReadyToPresent,
                                                         applyTokensWithUnsignaledTransactions);
             }
+
+            return applyTransactions(transactions, vsyncId);
         }
     }
-    return transactions;
-}
-
-// for test only
-bool SurfaceFlinger::flushTransactionQueues(int64_t vsyncId) {
-    std::vector<TransactionState> transactions = flushTransactions();
-    return applyTransactions(transactions, vsyncId);
 }
 
 bool SurfaceFlinger::applyTransactions(std::vector<TransactionState>& transactions,
                                        int64_t vsyncId) {
-    Mutex::Autolock _l(mStateLock);
-    return applyTransactionsLocked(transactions, vsyncId);
-}
-
-bool SurfaceFlinger::applyTransactionsLocked(std::vector<TransactionState>& transactions,
-                                             int64_t vsyncId) {
     bool needsTraversal = false;
     // Now apply all transactions.
     for (auto& transaction : transactions) {
