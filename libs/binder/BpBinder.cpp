@@ -279,7 +279,7 @@ status_t BpBinder::transact(
     if (mAlive) {
         bool privateVendor = flags & FLAG_PRIVATE_VENDOR;
         // don't send userspace flags to the kernel
-        flags = flags & ~FLAG_PRIVATE_VENDOR;
+        flags = flags & ~static_cast<uint32_t>(FLAG_PRIVATE_VENDOR);
 
         // user transactions require a given stability level
         if (code >= FIRST_CALL_TRANSACTION && code <= LAST_CALL_TRANSACTION) {
@@ -530,7 +530,7 @@ void BpBinder::onLastStrongRef(const void* /*id*/)
     Vector<Obituary>* obits = mObituaries;
     if(obits != nullptr) {
         if (!obits->isEmpty()) {
-            ALOGI("onLastStrongRef automatically unlinking death recipients: %s",
+            ALOGV("onLastStrongRef automatically unlinking death recipients: %s",
                   mDescriptorCache.size() ? String8(mDescriptorCache).c_str() : "<uncached descriptor>");
         }
 
