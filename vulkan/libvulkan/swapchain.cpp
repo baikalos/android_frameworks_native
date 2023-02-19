@@ -950,36 +950,27 @@ VkResult GetPhysicalDeviceSurfaceFormats2KHR(
         return GetPhysicalDeviceSurfaceFormatsKHR(physicalDevice,
                                                   pSurfaceInfo->surface,
                                                   pSurfaceFormatCount, nullptr);
-    }
+    } else {
+        // temp vector for forwarding; we'll marshal it into the pSurfaceFormats
+        // after the call.
+        std::vector<VkSurfaceFormatKHR> surface_formats(*pSurfaceFormatCount);
+        VkResult result = GetPhysicalDeviceSurfaceFormatsKHR(
+            physicalDevice, pSurfaceInfo->surface, pSurfaceFormatCount,
+            surface_formats.data());
 
-    // temp vector for forwarding; we'll marshal it into the pSurfaceFormats
-    // after the call.
-    std::vector<VkSurfaceFormatKHR> surface_formats(*pSurfaceFormatCount);
-    VkResult result = GetPhysicalDeviceSurfaceFormatsKHR(
-        physicalDevice, pSurfaceInfo->surface, pSurfaceFormatCount,
-        surface_formats.data());
+        if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
+            const auto& driver = GetData(physicalDevice).driver;
 
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        return result;
-    }
+            // marshal results individually due to stride difference.
+            uint32_t formats_to_marshal = *pSurfaceFormatCount;
+            for (uint32_t i = 0u; i < formats_to_marshal; i++) {
+                pSurfaceFormats[i].surfaceFormat = surface_formats[i];
 
-    const auto& driver = GetData(physicalDevice).driver;
-
-    // marshal results individually due to stride difference.
-    uint32_t formats_to_marshal = *pSurfaceFormatCount;
-    for (uint32_t i = 0u; i < formats_to_marshal; i++) {
-        pSurfaceFormats[i].surfaceFormat = surface_formats[i];
-
-        // Query the compression properties for the surface format
-        VkSurfaceFormat2KHR* pSurfaceFormat = &pSurfaceFormats[i];
-        while (pSurfaceFormat->pNext) {
-            pSurfaceFormat =
-                reinterpret_cast<VkSurfaceFormat2KHR*>(pSurfaceFormat->pNext);
-            switch (pSurfaceFormat->sType) {
-                case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT: {
+                // Query the compression properties for the surface format
+                if (pSurfaceFormats[i].pNext) {
                     VkImageCompressionPropertiesEXT* surfaceCompressionProps =
                         reinterpret_cast<VkImageCompressionPropertiesEXT*>(
-                            pSurfaceFormat);
+                            pSurfaceFormats[i].pNext);
 
                     if (surfaceCompressionProps &&
                         driver.GetPhysicalDeviceImageFormatProperties2KHR) {
@@ -1021,16 +1012,12 @@ VkResult GetPhysicalDeviceSurfaceFormats2KHR(
                             return compressionRes;
                         }
                     }
-                } break;
-
-                default:
-                    // Ignore all other extension structs
-                    break;
+                }
             }
         }
-    }
 
-    return result;
+        return result;
+    }
 }
 
 VKAPI_ATTR
