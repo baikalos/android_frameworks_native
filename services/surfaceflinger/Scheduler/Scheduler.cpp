@@ -778,7 +778,7 @@ void Scheduler::setGameModeRefreshRateForUid(FrameRateOverride frameRateOverride
         return;
     }
 
-    mFrameRateOverrideMappings.setGameModeRefreshRateForUid(frameRateOverride);
+    //mFrameRateOverrideMappings.setGameModeRefreshRateForUid(frameRateOverride);
 }
 
 void Scheduler::setPreferredRefreshRateForUid(FrameRateOverride frameRateOverride) {
@@ -786,7 +786,7 @@ void Scheduler::setPreferredRefreshRateForUid(FrameRateOverride frameRateOverrid
         return;
     }
 
-    mFrameRateOverrideMappings.setPreferredRefreshRateForUid(frameRateOverride);
+    //mFrameRateOverrideMappings.setPreferredRefreshRateForUid(frameRateOverride);
 }
 
 std::chrono::steady_clock::time_point Scheduler::getPreviousVsyncFrom(
