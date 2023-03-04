@@ -224,19 +224,22 @@ std::optional<Fps> LayerInfo::calculateRefreshRateIfPossible(
 
 LayerInfo::LayerVote LayerInfo::getRefreshRateVote(const RefreshRateConfigs& refreshRateConfigs,
                                                    nsecs_t now) {
-    if (mLayerVote.type != LayerHistory::LayerVoteType::Heuristic) {
-        ALOGV("%s voted %d ", mName.c_str(), static_cast<int>(mLayerVote.type));
+    if (mLayerVote.type != LayerHistory::LayerVoteType::Heuristic &&
+        mLayerVote.type != LayerHistory::LayerVoteType::ExplicitDefault &&
+        mLayerVote.type != LayerHistory::LayerVoteType::ExplicitExact &&
+        mLayerVote.type != LayerHistory::LayerVoteType::ExplicitExactOrMultiple) {
+        //ALOGI("%s voted %d ", mName.c_str(), static_cast<int>(mLayerVote.type));
         return mLayerVote;
     }
 
     if (isAnimating(now)) {
-        ALOGV("%s is animating", mName.c_str());
+        //ALOGI("%s is animating", mName.c_str());
         mLastRefreshRate.animatingOrInfrequent = true;
         return {LayerHistory::LayerVoteType::Max, Fps()};
     }
 
     if (!isFrequent(now)) {
-        ALOGV("%s is infrequent", mName.c_str());
+        //ALOGI("%s is infrequent", mName.c_str());
         mLastRefreshRate.animatingOrInfrequent = true;
         // Infrequent layers vote for mininal refresh rate for
         // battery saving purposes and also to prevent b/135718869.
@@ -252,12 +255,18 @@ LayerInfo::LayerVote LayerInfo::getRefreshRateVote(const RefreshRateConfigs& ref
 
     auto refreshRate = calculateRefreshRateIfPossible(refreshRateConfigs, now);
     if (refreshRate.has_value()) {
-        ALOGV("%s calculated refresh rate: %s", mName.c_str(), to_string(*refreshRate).c_str());
+        //ALOGI("%s calculated refresh rate: %s", mName.c_str(), to_string(*refreshRate).c_str());
         return {LayerHistory::LayerVoteType::Heuristic, refreshRate.value()};
     }
 
-    ALOGV("%s Max (can't resolve refresh rate)", mName.c_str());
-    return {LayerHistory::LayerVoteType::Max, Fps()};
+    if (mLayerVote.type != LayerHistory::LayerVoteType::Heuristic) {
+        //ALOGI("%s voted %d ", mName.c_str(), static_cast<int>(mLayerVote.type));
+        return mLayerVote;
+    }
+
+    //ALOGI("%s Heuristic (can't resolve refresh rate) :%s", mName.c_str(), to_string(Fps()).c_str());
+    //return {LayerHistory::LayerVoteType::Max, Fps()};
+    return {LayerHistory::LayerVoteType::Heuristic, Fps()};
 }
 
 const char* LayerInfo::getTraceTag(LayerHistory::LayerVoteType type) const {

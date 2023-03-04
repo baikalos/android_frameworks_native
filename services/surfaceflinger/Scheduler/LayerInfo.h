@@ -54,7 +54,7 @@ class LayerInfo {
     // is within a threshold. If a layer is infrequent, its average refresh rate is disregarded in
     // favor of a low refresh rate.
     static constexpr size_t kFrequentLayerWindowSize = 3;
-    static constexpr Fps kMinFpsForFrequentLayer = 10_Hz;
+    static constexpr Fps kMinFpsForFrequentLayer = 20_Hz;
     static constexpr auto kMaxPeriodForFrequentLayerNs =
             std::chrono::nanoseconds(kMinFpsForFrequentLayer.getPeriodNsecs()) + 1ms;
 
