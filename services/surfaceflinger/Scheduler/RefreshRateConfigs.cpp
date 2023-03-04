@@ -161,7 +161,7 @@ float RefreshRateConfigs::calculateNonExactMatchingLayerScoreLocked(const LayerR
 
     const auto displayPeriod = refreshRate.getPeriodNsecs();
     const auto layerPeriod = layer.desiredRefreshRate.getPeriodNsecs();
-    if (layer.vote == LayerVoteType::ExplicitDefault) {
+    /*if (layer.vote == LayerVoteType::ExplicitDefault) {
         // Find the actual rate the layer will render, assuming
         // that layerPeriod is the minimal period to render a frame.
         // For example if layerPeriod is 20ms and displayPeriod is 16ms,
@@ -178,9 +178,11 @@ float RefreshRateConfigs::calculateNonExactMatchingLayerScoreLocked(const LayerR
         // above 1.
         return std::min(1.0f,
                         static_cast<float>(layerPeriod) / static_cast<float>(actualLayerPeriod));
-    }
+    }*/
 
-    if (layer.vote == LayerVoteType::ExplicitExactOrMultiple ||
+    if (layer.vote == LayerVoteType::ExplicitExact ||
+        layer.vote == LayerVoteType::ExplicitDefault ||
+        layer.vote == LayerVoteType::ExplicitExactOrMultiple ||
         layer.vote == LayerVoteType::Heuristic) {
         if (isFractionalPairOrMultiple(refreshRate, layer.desiredRefreshRate)) {
             return kScoreForFractionalPairs;
@@ -231,7 +233,7 @@ float RefreshRateConfigs::calculateLayerScoreLocked(const LayerRequirement& laye
         return ratio * ratio;
     }
 
-    if (layer.vote == LayerVoteType::ExplicitExact) {
+    /*if (layer.vote == LayerVoteType::ExplicitExact) {
         const int divisor = getFrameRateDivisor(refreshRate, layer.desiredRefreshRate);
         if (mSupportsFrameRateOverrideByContent) {
             // Since we support frame rate override, allow refresh rates which are
@@ -241,7 +243,7 @@ float RefreshRateConfigs::calculateLayerScoreLocked(const LayerRequirement& laye
         }
 
         return divisor == 1;
-    }
+    }*/
 
     // If the layer frame rate is a divisor of the refresh rate it should score
     // the highest score.
@@ -336,7 +338,7 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
 
     // Consider the touch event if there are no Explicit* layers. Otherwise wait until after we've
     // selected a refresh rate to see if we should apply touch boost.
-    if (signals.touch && !hasExplicitVoteLayers) {
+    if (signals.touch /*&& !hasExplicitVoteLayers*/) {
         const DisplayModePtr& max = getMaxRefreshRateByPolicyLocked(anchorGroup);
         ALOGV("TouchBoost - choose %s", to_string(max->getFps()).c_str());
         return {max, GlobalSignals{.touch = true}};
@@ -555,7 +557,7 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
 
     using fps_approx_ops::operator<;
 
-    if (signals.touch && explicitDefaultVoteLayers == 0 && touchBoostForExplicitExact &&
+    if (signals.touch /*&& explicitDefaultVoteLayers == 0*/ && touchBoostForExplicitExact &&
         bestRefreshRate->getFps() < touchRefreshRate->getFps()) {
         ALOGV("TouchBoost - choose %s", to_string(touchRefreshRate->getFps()).c_str());
         return {touchRefreshRate, GlobalSignals{.touch = true}};
@@ -919,9 +921,10 @@ Fps RefreshRateConfigs::findClosestKnownFrameRate(Fps frameRate) const {
     auto lowerBound = std::lower_bound(mKnownFrameRates.begin(), mKnownFrameRates.end(), frameRate,
                                        isStrictlyLess);
 
-    const auto distance1 = std::abs(frameRate.getValue() - lowerBound->getValue());
+    /*const auto distance1 = std::abs(frameRate.getValue() - lowerBound->getValue());
     const auto distance2 = std::abs(frameRate.getValue() - std::prev(lowerBound)->getValue());
-    return distance1 < distance2 ? *lowerBound : *std::prev(lowerBound);
+    return distance1 < distance2 ? *lowerBound : *std::prev(lowerBound);*/
+    return *lowerBound;
 }
 
 RefreshRateConfigs::KernelIdleTimerAction RefreshRateConfigs::getIdleTimerAction() const {
