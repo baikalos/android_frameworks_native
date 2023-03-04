@@ -512,7 +512,7 @@ void EventThread::threadMain(std::unique_lock<std::mutex>& lock) {
             // Generate a fake VSYNC after a long timeout in case the driver stalls. When the
             // display is off, keep feeding clients at 60 Hz.
             const std::chrono::nanoseconds timeout =
-                    mState == State::SyntheticVSync ? 16ms : 1000ms;
+                    mState == State::SyntheticVSync ? 8ms : 1000ms;
             if (mCondition.wait_for(lock, timeout) == std::cv_status::timeout) {
                 if (mState == State::VSync) {
                     ALOGW("Faking VSYNC due to driver stall for thread %s", mThreadName);
