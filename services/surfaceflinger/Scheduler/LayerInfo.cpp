@@ -189,7 +189,7 @@ std::optional<nsecs_t> LayerInfo::calculateAverageFrameTime() const {
 
 std::optional<Fps> LayerInfo::calculateRefreshRateIfPossible(
         const RefreshRateConfigs& refreshRateConfigs, nsecs_t now) {
-    static constexpr float MARGIN = 1.0f; // 1Hz
+    static constexpr float MARGIN = 5.0f; // 1Hz
     if (!hasEnoughDataForHeuristic()) {
         ALOGV("Not enough data");
         return std::nullopt;
@@ -265,8 +265,8 @@ LayerInfo::LayerVote LayerInfo::getRefreshRateVote(const RefreshRateConfigs& ref
     }
 
     //ALOGI("%s Heuristic (can't resolve refresh rate) :%s", mName.c_str(), to_string(Fps()).c_str());
-    //return {LayerHistory::LayerVoteType::Max, Fps()};
-    return {LayerHistory::LayerVoteType::Heuristic, Fps()};
+    return {LayerHistory::LayerVoteType::Max, Fps()};
+    //return {LayerHistory::LayerVoteType::Heuristic, Fps()};
 }
 
 const char* LayerInfo::getTraceTag(LayerHistory::LayerVoteType type) const {

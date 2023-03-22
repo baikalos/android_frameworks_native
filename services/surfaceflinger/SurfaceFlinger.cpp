@@ -2873,7 +2873,7 @@ sp<DisplayDevice> SurfaceFlinger::setupNewDisplayDeviceInternal(
         scheduler::RefreshRateConfigs::Config config =
                 {.enableFrameRateOverride = android::sysprop::enable_frame_rate_override(false),
                  .frameRateMultipleThreshold =
-                         base::GetIntProperty("debug.sf.frame_rate_multiple_threshold", 60),
+                         base::GetIntProperty("debug.sf.frame_rate_multiple_threshold", 0),
                  .idleTimerTimeout = idleTimerTimeoutMs,
                  .kernelIdleTimerController = kernelIdleTimerController};
         creationArgs.refreshRateConfigs =
@@ -4950,7 +4950,7 @@ void SurfaceFlinger::setPowerModeInternal(const sp<DisplayDevice>& display, hal:
         mInterceptor->savePowerModeUpdate(display->getSequenceId(), static_cast<int32_t>(mode));
     }
     const auto refreshRate = display->refreshRateConfigs().getActiveMode()->getFps();
-    if (*currentMode == hal::PowerMode::OFF) {
+    if (!currentMode || *currentMode == hal::PowerMode::OFF) {
         // Turn on the display
         if (display->isInternal() && (!activeDisplay || !activeDisplay->isPoweredOn())) {
             onActiveDisplayChangedLocked(display);
@@ -6745,8 +6745,10 @@ ftl::SharedFuture<FenceResult> SurfaceFlinger::captureScreenCommon(
         std::unique_ptr<RenderArea> renderArea = renderAreaFuture.get();
         if (!renderArea) {
             ALOGW("Skipping screen capture because of invalid render area.");
-            captureResults.result = NO_MEMORY;
-            captureListener->onScreenCaptureCompleted(captureResults);
+            if (captureListener) {
+                captureResults.result = NO_MEMORY;
+                captureListener->onScreenCaptureCompleted(captureResults);
+            }
             return ftl::yield<FenceResult>(base::unexpected(NO_ERROR)).share();
         }
 

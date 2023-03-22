@@ -419,15 +419,15 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
                 continue;
             }
 
-            const bool inPrimaryRange = policy->primaryRange.includes(mode->getFps());
-            if ((primaryRangeIsSingleRate || !inPrimaryRange) &&
+            //const bool inPrimaryRange = policy->primaryRange.includes(mode->getFps());
+            /*if ((primaryRangeIsSingleRate || !inPrimaryRange) &&
                 !(layer.focused &&
                   (layer.vote == LayerVoteType::ExplicitDefault ||
                    layer.vote == LayerVoteType::ExplicitExact))) {
                 // Only focused layers with ExplicitDefault frame rate settings are allowed to score
                 // refresh rates outside the primary range.
                 continue;
-            }
+            }*/
 
             const float layerScore =
                     calculateLayerScoreLocked(layer, mode->getFps(), isSeamlessSwitch);
@@ -444,12 +444,14 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
                 switch (vote) {
                     case LayerVoteType::ExplicitExactOrMultiple:
                     case LayerVoteType::Heuristic:
+                    case LayerVoteType::ExplicitDefault:
+                    case LayerVoteType::ExplicitExact:
                         return true;
                     case LayerVoteType::NoVote:
                     case LayerVoteType::Min:
                     case LayerVoteType::Max:
-                    case LayerVoteType::ExplicitDefault:
-                    case LayerVoteType::ExplicitExact:
+                    //case LayerVoteType::ExplicitDefault:
+                    //case LayerVoteType::ExplicitExact:
                         return false;
                 }
             }(layer.vote);
@@ -519,12 +521,12 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
             ? getMaxScoreRefreshRate(scores.rbegin(), scores.rend())
             : getMaxScoreRefreshRate(scores.begin(), scores.end());
 
-   bool noFpsScored = std::all_of(scores.begin(), scores.end(),
+   /*bool noFpsScored = std::all_of(scores.begin(), scores.end(),
                                   [](RefreshRateScore score) { return score.overallScore == 0; });
    if (noFpsScored) {
       ALOGV("No fps scored - choose %s", to_string(mActiveModeIt->second->getFps()).c_str());
       return {mActiveModeIt->second, kNoSignals};
-   }
+   }*/
 
    if (primaryRangeIsSingleRate) {
         // If we never scored any layers, then choose the rate from the primary

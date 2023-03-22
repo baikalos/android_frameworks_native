@@ -506,8 +506,8 @@ void Scheduler::registerLayer(Layer* layer) {
         windowType == WindowType::STATUS_BAR ||
         windowType == WindowType::SYSTEM_ALERT ||
         windowType == WindowType::TOAST ||
-        windowType == WindowType::SYSTEM_DIALOG ||
-        windowType == WindowType::KEYGUARD_DIALOG ||
+        /*windowType == WindowType::SYSTEM_DIALOG ||
+        windowType == WindowType::KEYGUARD_DIALOG ||*/
         windowType == WindowType::INPUT_METHOD ||
         windowType == WindowType::INPUT_METHOD_DIALOG ||
         windowType == WindowType::NAVIGATION_BAR ||

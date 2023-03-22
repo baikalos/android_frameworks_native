@@ -1233,7 +1233,7 @@ private:
     // Tracks layers that need to update a display's dirty region.
     std::vector<sp<Layer>> mLayersPendingRefresh;
     // size should be longest sf-duration / shortest vsync period and round up
-    std::array<FenceWithFenceTime, 5> mPreviousPresentFences; // currently consider 166hz.
+    std::array<FenceWithFenceTime, 2> mPreviousPresentFences; // currently consider 166hz.
     // True if in the previous frame at least one layer was composed via the GPU.
     bool mHadClientComposition = false;
     // True if in the previous frame at least one layer was composed via HW Composer.
@@ -1271,7 +1271,7 @@ private:
     std::atomic_bool mForceFullDamage = false;
 
     bool mLayerCachingEnabled = false;
-    bool mPropagateBackpressure = true;
+    bool mPropagateBackpressure = false;
     bool mPropagateBackpressureClientComposition = false;
     sp<SurfaceInterceptor> mInterceptor;
 
