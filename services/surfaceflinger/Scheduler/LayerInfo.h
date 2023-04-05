@@ -54,7 +54,7 @@ class LayerInfo {
     // is within a threshold. If a layer is infrequent, its average refresh rate is disregarded in
     // favor of a low refresh rate.
     static constexpr size_t kFrequentLayerWindowSize = 3;
-    static constexpr Fps kMinFpsForFrequentLayer = 10_Hz;
+    static constexpr Fps kMinFpsForFrequentLayer = 20_Hz;
     static constexpr auto kMaxPeriodForFrequentLayerNs =
             std::chrono::nanoseconds(kMinFpsForFrequentLayer.getPeriodNsecs()) + 1ms;
 
@@ -253,7 +253,7 @@ private:
         const std::string mName;
         mutable std::optional<HeuristicTraceTagData> mHeuristicTraceTagData;
         std::deque<RefreshRateData> mRefreshRates;
-        static constexpr float MARGIN_CONSISTENT_FPS = 1.0;
+        static constexpr float MARGIN_CONSISTENT_FPS = 5.0;
     };
 
     bool isFrequent(nsecs_t now) const;
