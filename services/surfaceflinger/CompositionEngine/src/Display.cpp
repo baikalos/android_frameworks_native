@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define POWERHINT_SESSION_ENABLED false
+
 #include <android-base/stringprintf.h>
 #include <compositionengine/CompositionEngine.h>
 #include <compositionengine/CompositionRefreshArgs.h>
@@ -413,7 +415,7 @@ void Display::setExpensiveRenderingExpected(bool enabled) {
 }
 
 bool Display::isPowerHintSessionEnabled() {
-    return mPowerAdvisor != nullptr && mPowerAdvisor->usePowerHintSession();
+    return POWERHINT_SESSION_ENABLED;
 }
 
 void Display::setHintSessionGpuFence(std::unique_ptr<FenceTime>&& gpuFence) {

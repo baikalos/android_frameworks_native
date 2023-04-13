@@ -22,6 +22,8 @@
 //#define LOG_NDEBUG 0
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
 
+#define POWERHINT_SESSION_ENABLED false
+
 #include "SurfaceFlinger.h"
 
 #include <android-base/parseint.h>
@@ -459,7 +461,7 @@ SurfaceFlinger::SurfaceFlinger(Factory& factory) : SurfaceFlinger(factory, SkipI
 
     // Power hint session mode, representing which hint(s) to send: early, late, or both)
     mPowerHintSessionMode =
-            {.late = base::GetBoolProperty("debug.sf.send_late_power_session_hint"s, true),
+            {.late = base::GetBoolProperty("debug.sf.send_late_power_session_hint"s, false),
              .early = base::GetBoolProperty("debug.sf.send_early_power_session_hint"s, false)};
 }
 
@@ -2097,10 +2099,7 @@ bool SurfaceFlinger::commit(nsecs_t frameTime, int64_t vsyncId, nsecs_t expected
 
     // Save this once per commit + composite to ensure consistency
     // TODO (b/240619471): consider removing active display check once AOD is fixed
-    const auto activeDisplay =
-            FTL_FAKE_GUARD(mStateLock, getDisplayDeviceLocked(mActiveDisplayToken));
-    mPowerHintSessionEnabled = mPowerAdvisor->usePowerHintSession() && activeDisplay &&
-            activeDisplay->getPowerMode() == hal::PowerMode::ON;
+    mPowerHintSessionEnabled = POWERHINT_SESSION_ENABLED;
     if (mPowerHintSessionEnabled) {
         const auto& display = FTL_FAKE_GUARD(mStateLock, getDefaultDisplayDeviceLocked()).get();
         // get stable vsync period from display mode
