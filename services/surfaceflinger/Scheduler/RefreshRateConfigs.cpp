@@ -336,7 +336,7 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
 
     // Consider the touch event if there are no Explicit* layers. Otherwise wait until after we've
     // selected a refresh rate to see if we should apply touch boost.
-    if (signals.touch && !hasExplicitVoteLayers) {
+    if (signals.touch /*&& !hasExplicitVoteLayers*/) {
         const DisplayModePtr& max = getMaxRefreshRateByPolicyLocked(anchorGroup);
         ALOGV("TouchBoost - choose %s", to_string(max->getFps()).c_str());
         return {max, GlobalSignals{.touch = true}};
