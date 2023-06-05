@@ -53,7 +53,7 @@ bool traceEnabled() {
 
 bool useFrameRatePriority() {
     char value[PROPERTY_VALUE_MAX];
-    property_get("debug.sf.use_frame_rate_priority", value, "1");
+    property_get("debug.sf.use_frame_rate_priority", value, "0");
     return atoi(value);
 }
 
@@ -198,29 +198,29 @@ void LayerHistory::partitionLayers(nsecs_t now) {
         auto& [layerUnsafe, info] = it->second;
         if (isLayerActive(*info, threshold)) {
             // Set layer vote if set
-            /*const auto frameRate = info->getSetFrameRateVote();
+            const auto frameRate = info->getSetFrameRateVote();
             const auto voteType = [&]() {
                 switch (frameRate.type) {
                     case Layer::FrameRateCompatibility::Default:
                         //return LayerVoteType::NoVote;
                         return LayerVoteType::ExplicitDefault;
                     case Layer::FrameRateCompatibility::ExactOrMultiple:
-                        //return LayerVoteType::ExplicitExactOrMultiple;
-                        return LayerVoteType::ExplicitDefault;
+                        return LayerVoteType::ExplicitExactOrMultiple;
+                        //return LayerVoteType::ExplicitDefault;
                     case Layer::FrameRateCompatibility::NoVote:
                         return LayerVoteType::NoVote;
                     case Layer::FrameRateCompatibility::Exact:
-                        //return LayerVoteType::ExplicitExact;
-                        return LayerVoteType::ExplicitDefault;
+                        return LayerVoteType::ExplicitExact;
+                        //return LayerVoteType::ExplicitDefault;
                 }
-            }();*/
+            }();
 
-            //if (frameRate.rate.isValid() || voteType == LayerVoteType::NoVote) {
-            //    const auto type = info->isVisible() ? voteType : LayerVoteType::NoVote;
-            //    info->setLayerVote({type, frameRate.rate, frameRate.seamlessness});
-            //} else {
+            if (frameRate.rate.isValid() || voteType == LayerVoteType::NoVote) {
+                const auto type = info->isVisible() ? voteType : LayerVoteType::NoVote;
+                info->setLayerVote({type, frameRate.rate, frameRate.seamlessness});
+            } else {
                 info->resetLayerVote();
-            //}
+            }
 
             it++;
         } else {
