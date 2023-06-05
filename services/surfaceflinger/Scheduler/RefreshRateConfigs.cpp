@@ -75,7 +75,7 @@ std::string formatLayerInfo(const RefreshRateConfigs::LayerRequirement& layer, f
 }
 
 std::vector<Fps> constructKnownFrameRates(const DisplayModes& modes) {
-    std::vector<Fps> knownFrameRates = {24_Hz, 30_Hz, 45_Hz, 60_Hz, 72_Hz};
+    std::vector<Fps> knownFrameRates = {24_Hz, 25_Hz, 30_Hz, 45_Hz, 50_Hz, 60_Hz, 75_Hz, 90_Hz, 105_Hz, 120_Hz};
     knownFrameRates.reserve(knownFrameRates.size() + modes.size());
 
     // Add all supported refresh rates.
@@ -917,9 +917,10 @@ Fps RefreshRateConfigs::findClosestKnownFrameRate(Fps frameRate) const {
     auto lowerBound = std::lower_bound(mKnownFrameRates.begin(), mKnownFrameRates.end(), frameRate,
                                        isStrictlyLess);
 
-    const auto distance1 = std::abs(frameRate.getValue() - lowerBound->getValue());
-    const auto distance2 = std::abs(frameRate.getValue() - std::prev(lowerBound)->getValue());
-    return distance1 < distance2 ? *lowerBound : *std::prev(lowerBound);
+    //const auto distance1 = std::abs(frameRate.getValue() - lowerBound->getValue());
+    //const auto distance2 = std::abs(frameRate.getValue() - std::prev(lowerBound)->getValue());
+    //return distance1 < distance2 ? *lowerBound : *std::prev(lowerBound);
+    return *lowerBound;
 }
 
 RefreshRateConfigs::KernelIdleTimerAction RefreshRateConfigs::getIdleTimerAction() const {
