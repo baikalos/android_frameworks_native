@@ -1976,10 +1976,11 @@ void SurfaceFlinger::setVsyncEnabled(bool enabled) {
 SurfaceFlinger::FenceWithFenceTime SurfaceFlinger::previousFrameFence() {
     const auto now = systemTime();
     const auto vsyncPeriod = mScheduler->getDisplayStatInfo(now).vsyncPeriod;
-    const bool expectedPresentTimeIsTheNextVsync = mExpectedPresentTime - now <= vsyncPeriod;
+    //const bool expectedPresentTimeIsTheNextVsync = mExpectedPresentTime - now <= vsyncPeriod;
+    const bool vsyncOffset = mVsyncModulator->getVsyncConfig().sfOffset >= 0;
 
     size_t shift = 0;
-    if (!expectedPresentTimeIsTheNextVsync) {
+    if (!vsyncOffset /*!expectedPresentTimeIsTheNextVsync*/) {
         shift = static_cast<size_t>((mExpectedPresentTime - now) / vsyncPeriod);
         if (shift >= mPreviousPresentFences.size()) {
             shift = mPreviousPresentFences.size() - 1;
@@ -7079,7 +7080,7 @@ status_t SurfaceFlinger::applyRefreshRateConfigsPolicy(const sp<DisplayDevice>& 
               preferredDisplayMode->getId().value());
         setDesiredActiveMode({preferredDisplayMode, DisplayModeEvent::Changed}, force);
     } else {
-        LOG_ALWAYS_FATAL("Desired display mode not allowed: %d",
+        ALOGE("Desired display mode not allowed: %d",
                          preferredDisplayMode->getId().value());
     }
 
