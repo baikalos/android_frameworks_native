@@ -135,6 +135,7 @@ std::optional<nsecs_t> LayerInfo::calculateAverageFrameTime() const {
             std::any_of(mFrameTimes.begin(), mFrameTimes.end(),
                         [](const auto& frame) { return frame.pendingModeChange; });
     if (isDuringModeChange) {
+        ALOGV("isDuringModeChange=true");
         return std::nullopt;
     }
 
@@ -144,6 +145,7 @@ std::optional<nsecs_t> LayerInfo::calculateAverageFrameTime() const {
     if (isMissingPresentTime && !mLastRefreshRate.reported.isValid()) {
         // If there are no presentation timestamps and we haven't calculated
         // one in the past then we can't calculate the refresh rate
+        ALOGV("isMissingPresentTime=%d, mLastRefreshRate=%d", isMissingPresentTime, mLastRefreshRate.reported.isValid());
         return std::nullopt;
     }
 
@@ -216,6 +218,8 @@ std::optional<Fps> LayerInfo::calculateRefreshRateIfPossible(
             ALOGV("%s Not stable (%s) returning last known frame rate %s", mName.c_str(),
                   to_string(refreshRate).c_str(), to_string(mLastRefreshRate.reported).c_str());
         }
+    } else {
+        ALOGV("Can't calculate frame time");
     }
 
     return mLastRefreshRate.reported.isValid() ? std::make_optional(mLastRefreshRate.reported)
