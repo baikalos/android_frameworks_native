@@ -207,6 +207,9 @@ public:
     // uses the primary range, not the app request range.
     DisplayModePtr getMaxRefreshRateByPolicy() const EXCLUDES(mLock);
 
+    // Returns the lowest refresh rate supported by the display.
+    DisplayModePtr getMinRefreshRate() const EXCLUDES(mLock);
+
     void setActiveModeId(DisplayModeId) EXCLUDES(mLock);
     DisplayModePtr getActiveMode() const EXCLUDES(mLock);
 
