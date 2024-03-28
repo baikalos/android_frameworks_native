@@ -22,7 +22,7 @@
 
 #define LOG_TAG "InputDriver"
 
-#define LOG_NDEBUG 0
+// #define LOG_NDEBUG 0
 
 #include "InputDriver.h"
 #include "InputHost.h"
