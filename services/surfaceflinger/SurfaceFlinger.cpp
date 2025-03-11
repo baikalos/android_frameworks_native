@@ -2773,6 +2773,10 @@ std::pair<DisplayModes, DisplayModePtr> SurfaceFlinger::loadDisplayModes(
 
     DisplayModes newModes;
     for (const auto& hwcMode : hwcModes) {
+
+        //float rate = 1e9f / hwcMode.vsyncPeriod;
+        //if( (rate - 90.0) < 5 ) continue;
+
         const DisplayModeId id{nextModeId++};
         newModes.try_emplace(id,
                              DisplayMode::Builder(hwcMode.hwcId)
@@ -3541,6 +3545,13 @@ void SurfaceFlinger::initScheduler(const sp<DisplayDevice>& display) {
     const scheduler::RefreshRateConfigs::Policy currentPolicy =
             display->refreshRateConfigs().getCurrentPolicy();
     mScheduler->onPrimaryDisplayModeChanged(mAppConnectionHandle, display->getMode(currentPolicy.defaultMode));
+
+    char value[PROPERTY_VALUE_MAX];
+    property_get("persist.baikal.fps_filter", value, "");
+    ALOGE("%s: Disallowed modes %s", __func__, value);
+    auto config = std::string(value);
+    display->refreshRateConfigs().setFilterByOsFromString(config);
+    ALOGE("%s: Disallowed modes successfuly set", __func__);
 }
 
 void SurfaceFlinger::updatePhaseConfiguration(const Fps& refreshRate) {
@@ -4974,6 +4985,15 @@ void SurfaceFlinger::setPowerModeInternal(const sp<DisplayDevice>& display, hal:
     if (activeDisplay != display && display->isInternal() && activeDisplay &&
         activeDisplay->isPoweredOn()) {
         ALOGW("Trying to change power mode on non active display while the active display is ON");
+    }
+
+    if( mode == hal::PowerMode::ON ) {
+        char value[PROPERTY_VALUE_MAX];
+        property_get("persist.baikal.fps_filter", value, "");
+        ALOGE("%s: Disallowed modes %s", __func__, value);
+        auto config = std::string(value);
+        display->refreshRateConfigs().setFilterByOsFromString(config);
+        ALOGE("%s: Disallowed modes successfuly set", __func__);
     }
 
     display->setPowerMode(mode);

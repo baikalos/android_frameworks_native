@@ -504,7 +504,7 @@ void Scheduler::registerLayer(Layer* layer) {
     scheduler::LayerHistory::LayerVoteType voteType;
     const auto windowType = layer->getWindowType();
 
-    if (!mFeatures.test(Feature::kContentDetection) ||
+    if (/*!mFeatures.test(Feature::kContentDetection) ||*/
         windowType == WindowType::STATUS_BAR ||
         windowType == WindowType::SYSTEM_ALERT ||
         windowType == WindowType::TOAST ||

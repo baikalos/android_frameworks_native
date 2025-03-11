@@ -417,6 +417,13 @@ auto RefreshRateConfigs::getBestRefreshRateLocked(const std::vector<LayerRequire
                 continue;
             }
 
+            if( !filterByOs(mode->getFps()) ) {
+                ALOGV("%s ignores %s by user request. Current mode = %s",
+                      formatLayerInfo(layer, weight).c_str(), to_string(*mode).c_str(),
+                      to_string(*mActiveModeIt->second).c_str());
+                continue;
+            }
+
             const bool inPrimaryRange = policy->primaryRange.includes(mode->getFps());
             if ((primaryRangeIsSingleRate || !inPrimaryRange) &&
                 !(layer.focused &&
@@ -867,6 +874,36 @@ bool RefreshRateConfigs::isModeAllowed(DisplayModeId modeId) const {
                        });
 }
 
+bool RefreshRateConfigs::filterByOs(const Fps& fps) const {
+    //std::lock_guard lock(mLock);
+    if( mFilteredRates.empty() ) return true;
+    if( std::find(mFilteredRates.begin(), mFilteredRates.end(), (int)fps.getValue()) != mFilteredRates.end() ) {
+        ALOGV("Ignoring mode for %d fps", (int)fps.getValue());
+        return false;
+    }
+    return true; 
+}
+
+void RefreshRateConfigs::setFilterByOsFromString(std::string& source) {
+    //std::lock_guard lock(mLock);
+    ALOGI("set filtered rates %s", source.c_str());
+    if( source.empty() ) {
+        if( !mFilteredRates.empty() ) mFilteredRates.clear();
+        return;
+    }
+
+    std::replace( source.begin(), source.end(), ',', ' ');
+
+    if( source == mFilteredRatesString ) {
+        ALOGI("not set same filtered rates %s", source.c_str());
+        return;
+    }
+    
+    mFilteredRatesString = source;
+    std::stringstream stream(source);
+    mFilteredRates.assign( (std::istream_iterator<int>( stream )),  (std::istream_iterator<int>()) );
+}
+
 void RefreshRateConfigs::constructAvailableRefreshRates() {
     // Filter modes based on current policy and sort on refresh rate.
     const Policy* policy = getCurrentPolicyLocked();
@@ -882,8 +919,8 @@ void RefreshRateConfigs::constructAvailableRefreshRates() {
                     range.includes(mode.getFps());
         };
 
-        const auto modes = sortByRefreshRate(mDisplayModes, filter);
-        LOG_ALWAYS_FATAL_IF(modes.empty(), "No matching modes for %s range %s", rangeName,
+        auto modes = sortByRefreshRate(mDisplayModes, filter);
+        LOG_ALWAYS_FATAL_IF(modes.empty(), "Fatal!: No matching modes for %s range %s", rangeName,
                             to_string(range).c_str());
 
         const auto stringifyModes = [&] {
@@ -894,7 +931,7 @@ void RefreshRateConfigs::constructAvailableRefreshRates() {
             }
             return str;
         };
-        ALOGV("%s refresh rates: %s", rangeName, stringifyModes().c_str());
+        ALOGW("%s refresh rates: %s", rangeName, stringifyModes().c_str());
 
         return modes;
     };

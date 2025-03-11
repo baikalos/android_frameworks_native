@@ -330,8 +330,12 @@ public:
 
     std::chrono::milliseconds getIdleTimerTimeout();
 
+    void setFilterByOsFromString(std::string& source);
+
 private:
     friend struct TestableRefreshRateConfigs;
+
+    bool filterByOs(const Fps& fps) const;
 
     void constructAvailableRefreshRates() REQUIRES(mLock);
 
@@ -411,6 +415,9 @@ private:
     std::optional<IdleTimerCallbacks> mIdleTimerCallbacks GUARDED_BY(mIdleTimerCallbacksMutex);
     // Used to detect (lack of) frame activity.
     std::optional<scheduler::OneShotTimer> mIdleTimer;
+
+    std::vector<int> mFilteredRates;
+    std::string mFilteredRatesString;
 };
 
 } // namespace android::scheduler
