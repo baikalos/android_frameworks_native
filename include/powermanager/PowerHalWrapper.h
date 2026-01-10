@@ -153,6 +153,10 @@ protected:
 // Wrapper for the AIDL Power HAL.
 class AidlHalWrapper : public EmptyHalWrapper {
 public:
+
+    static constexpr size_t kMaxBoostSupportSize = 64;
+    static constexpr size_t kMaxModeSupportSize = 64;
+
     explicit AidlHalWrapper(std::shared_ptr<hal::IPower> handle) : mHandle(std::move(handle)) {}
     ~AidlHalWrapper() override = default;
 
@@ -180,9 +184,9 @@ private:
     std::mutex mBoostMutex;
     std::mutex mModeMutex;
     std::shared_ptr<hal::IPower> mHandle;
-    std::array<HalSupport, static_cast<int32_t>(*(ndk::enum_range<hal::Boost>().end() - 1)) + 1>
+    std::array<HalSupport, kMaxBoostSupportSize>
             mBoostSupportedArray GUARDED_BY(mBoostMutex) = {HalSupport::UNKNOWN};
-    std::array<HalSupport, static_cast<int32_t>(*(ndk::enum_range<hal::Mode>().end() - 1)) + 1>
+    std::array<HalSupport, kMaxModeSupportSize>
             mModeSupportedArray GUARDED_BY(mModeMutex) = {HalSupport::UNKNOWN};
 };
 
