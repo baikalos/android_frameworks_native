@@ -208,7 +208,7 @@ HalResult<void> AidlHalWrapper::setBoost(Aidl::Boost boost, int32_t durationMs) 
 
     // Quick return if boost is not supported by HAL
     if (idx >= mBoostSupportedArray.size() || mBoostSupportedArray[idx] == HalSupport::OFF) {
-        ALOGV("Skipped setBoost %s because %s", toString(boost).c_str(), getUnsupportedMessage());
+        ALOGW("Skipped setBoost %s because %s", toString(boost).c_str(), getUnsupportedMessage());
         return HalResult<void>::unsupported();
     }
 
@@ -224,7 +224,7 @@ HalResult<void> AidlHalWrapper::setBoost(Aidl::Boost boost, int32_t durationMs) 
 
         mBoostSupportedArray[idx] = isSupported ? HalSupport::ON : HalSupport::OFF;
         if (!isSupported) {
-            ALOGV("Skipped setBoost %s because %s", toString(boost).c_str(),
+            ALOGW("Skipped setBoost %s because %s", toString(boost).c_str(),
                   getUnsupportedMessage());
             return HalResult<void>::unsupported();
         }
@@ -240,7 +240,7 @@ HalResult<void> AidlHalWrapper::setMode(Aidl::Mode mode, bool enabled) {
 
     // Quick return if mode is not supported by HAL
     if (idx >= mModeSupportedArray.size() || mModeSupportedArray[idx] == HalSupport::OFF) {
-        ALOGV("Skipped setMode %s because %s", toString(mode).c_str(), getUnsupportedMessage());
+        ALOGW("Skipped setMode %s because %s", toString(mode).c_str(), getUnsupportedMessage());
         return HalResult<void>::unsupported();
     }
 
@@ -253,7 +253,7 @@ HalResult<void> AidlHalWrapper::setMode(Aidl::Mode mode, bool enabled) {
 
         mModeSupportedArray[idx] = isSupported ? HalSupport::ON : HalSupport::OFF;
         if (!isSupported) {
-            ALOGV("Skipped setMode %s because %s", toString(mode).c_str(), getUnsupportedMessage());
+            ALOGW("Skipped setMode %s because %s", toString(mode).c_str(), getUnsupportedMessage());
             return HalResult<void>::unsupported();
         }
     }
