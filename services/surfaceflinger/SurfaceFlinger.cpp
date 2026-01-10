@@ -951,8 +951,10 @@ renderengine::RenderEngine::BlurAlgorithm chooseBlurAlgorithm(bool supportsBlur)
         return renderengine::RenderEngine::BlurAlgorithm::Kawase;
     } else if (algorithm == "kawase_darkmoon") {
         return renderengine::RenderEngine::BlurAlgorithm::KawaseDarkmoon;
-    } else {
+    } else if (algorithm == "kawase_dualfilterv2") {
         return renderengine::RenderEngine::BlurAlgorithm::KawaseDualFilterV2;
+    } else {
+        return renderengine::RenderEngine::BlurAlgorithm::KawaseDarkmoon;
     }
 }
 
@@ -7626,7 +7628,7 @@ status_t SurfaceFlinger::onTransact(uint32_t code, const Parcel& data, Parcel* r
             case 1007: // Unused.
                 return NAME_NOT_FOUND;
             case 1008: // Toggle forced GPU composition.
-                sfdo_forceClientComposition(data.readInt32() != 0);
+                // sfdo_forceClientComposition(data.readInt32() != 0);
                 return NO_ERROR;
             case 1009: // Toggle use of transform hint.
                 mDebugDisableTransformHint = data.readInt32() != 0;
