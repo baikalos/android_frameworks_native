@@ -131,11 +131,13 @@ void GpuWork::initialize() {
         std::lock_guard<std::mutex> lock(mMutex);
 
         if (!getBpfMap("/sys/fs/bpf/map_gpuWork_gpu_work_map", &mGpuWorkMap)) {
-            return;
+            ALOGW("Failed to get bpf map from /sys/fs/bpf/map_gpuWork_gpu_work_map");
+            //return;
         }
 
         if (!getBpfMap("/sys/fs/bpf/map_gpuWork_gpu_work_global_data", &mGpuWorkGlobalDataMap)) {
-            return;
+            ALOGW("Failed to get bpf map from /sys/fs/bpf/map_gpuWork_gpu_work_global_data");
+            //return;
         }
 
         mPreviousMapClearTimePoint = std::chrono::steady_clock::now();
@@ -144,6 +146,7 @@ void GpuWork::initialize() {
     // Attach the tracepoint.
     if (!attachTracepoint("/sys/fs/bpf/prog_gpuWork_tracepoint_power_gpu_work_period", "power",
                           "gpu_work_period")) {
+        ALOGW("Failed to attach tracepoint /sys/fs/bpf/prog_gpuWork_tracepoint_power_gpu_work_period");
         return;
     }
 
