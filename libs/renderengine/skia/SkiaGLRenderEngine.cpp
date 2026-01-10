@@ -80,8 +80,12 @@ static status_t selectConfigForAttribute(EGLDisplay dpy, EGLint const* attrs, EG
             *outConfig = configs[0];
             return NO_ERROR;
         }
+    } else {
+        ALOGE("FATAL: No EGL configurations found!");
+        return NAME_NOT_FOUND;
     }
 
+    ALOGE("FATAL: No suitable EGL configurations found!");
     return NAME_NOT_FOUND;
 }
 
